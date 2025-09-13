@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>强制发送登录数据</title>
+    <style>
+        /* 简洁登录样式，适配手机 */
+        body {
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            background: #f5f5f5;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-card {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        .login-card h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            color: #666;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        #loginBtn {
+            width: 100%;
+            padding: 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #loginBtn:hover {
+            background: #1d4ed8;
+        }
+        .send-status {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            display: none;
+        }
+        .sent {
+            background: #ecfdf5;
+            color: #065f46;
+            display: block;
+        }
+        .json-view {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 4px;
+            font-family: "Courier New", monospace;
+            font-size: 13px;
+            color: #1e293b;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2>用户登录</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" required placeholder="请输入用户名">
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" required placeholder="请输入密码">
+            </div>
+            <button type="submit" id="loginBtn">登录（强制发送数据）</button>
+        </form>
+
+        <!-- 发送状态和JSON预览 -->
+        <div class="send-status" id="sendStatus">
+            <strong>✅ 数据已强制发送！</strong><br>
+            （无论是否有接收端，请求已触发）
+            <div class="json-view" id="jsonView"></div>
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const sendStatus = document.getElementById('sendStatus');
+        const jsonView = document.getElementById('jsonView');
+
+        // 表单提交事件：只触发发送，不依赖接收结果
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // 阻止页面刷新
+
+            // 1. 获取用户输入
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // 2. 构造JSON数据（含用户名、密码、登录时间）
+            const loginData = {
+                username: username,
+                password: password,
+                login_time: new Date().toLocaleString() // 本地时间（如：2024/5/20 18:45:30）
+            };
+            const jsonData = JSON.stringify(loginData, null, 2); // 格式化JSON，方便查看
+
+            // 3. 强制发送请求（无视接收端状态）
+            // 这里的URL可替换为你的Python脚本地址，即使填无效地址也会触发发送
+            const targetUrl = 'https://any-url-you-want.com/receive-login'; // 可自定义
+            
+            try {
+                // 发起POST请求，发送JSON数据
+                await fetch(targetUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: jsonData,
+                    timeout: 5000 // 5秒超时，避免长时间等待
+                });
+            } catch (error) {
+                // 即使网络错误/接收端不存在，也不阻断后续流程
+                console.log('发送过程存在异常（可能无接收端）：', error);
+            } finally {
+                // 4. 显示发送状态和JSON内容（无论发送是否成功，都显示）
+                jsonView.textContent = '发送的JSON数据：\n' + jsonData;
+                sendStatus.classList.add('sent');
+            }
+        });
+    </script>
+</body> 
+</html>
